@@ -57,7 +57,7 @@ Shader "Ouyang/Learn/Specular/Chapter_7_tex"
                 // fixed3 worldNormal = normalize(UnityObjectToWorldNormal(v.normal));
                 o.worldNormal = UnityObjectToWorldNormal(v.normal);
                 o.worldPos = mul(unity_ObjectToWorld,v.vertex).xyz;
-                UNITY_TRANSFER_FOG(o,o.vertex);
+                // UNITY_TRANSFER_FOG(o,o.vertex);
                 return o;
             }
 
@@ -66,7 +66,7 @@ Shader "Ouyang/Learn/Specular/Chapter_7_tex"
                 // sample the texture
                 fixed3 albedo = tex2D(_MainTex, i.uv).rgb *_DiffuseColor.rgb;
                 // apply fog
-                UNITY_APPLY_FOG(i.fogCoord, albedo);
+                // UNITY_APPLY_FOG(i.fogCoord, albedo);
                 // 获取环境光
                 fixed3 ambient = UNITY_LIGHTMODEL_AMBIENT.xyz * albedo;
                 // 获取世界空间的光照方向
