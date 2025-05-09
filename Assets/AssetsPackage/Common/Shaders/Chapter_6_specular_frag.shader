@@ -1,9 +1,11 @@
-Shader "Ouyang/Learn/Unlit/Chapter_6_diffuse_half_lambert"
+Shader "Ouyang/Learn/Specular/Chapter_6_specular_frag"
 {
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
         _DiffuseColor ("Diffuse Color", Color) = (1,1,1,1)
+                _SpecularColor ("Specular Color", Color) = (1,1,1,1)
+        _Gloss ("Gloss", Range(8.0, 256)) = 20
     }
     SubShader
     {
@@ -35,11 +37,14 @@ Shader "Ouyang/Learn/Unlit/Chapter_6_diffuse_half_lambert"
                 UNITY_FOG_COORDS(1)
                 float4 vertex : SV_POSITION;
                 fixed3 worldNormal: TEXCOORD1; // 世界坐标的法线向量
+                fixed3 worldPos: TEXCOORD2; // 顶点坐标转成时间坐标系
             };
 
             sampler2D _MainTex;
             float4 _MainTex_ST;
             fixed4 _DiffuseColor;
+            fixed4 _SpecularColor;
+            float _Gloss;
 
             v2f vert (appdata v)
             {
@@ -50,6 +55,7 @@ Shader "Ouyang/Learn/Unlit/Chapter_6_diffuse_half_lambert"
                 // fixed3 worldNormal = normalize(mul(v.normal, (float3x3)unity_worldToObject));
                 // fixed3 worldNormal = normalize(UnityObjectToWorldNormal(v.normal));
                 o.worldNormal = UnityObjectToWorldNormal(v.normal);
+                o.worldPos = mul(unity_ObjectToWorld,v.vertex).xyz;
                 UNITY_TRANSFER_FOG(o,o.vertex);
                 return o;
             }
@@ -68,9 +74,16 @@ Shader "Ouyang/Learn/Unlit/Chapter_6_diffuse_half_lambert"
                 fixed3 worldNormal = normalize(i.worldNormal.xyz);
                 // 计算漫反射强度 在"LightMode"="ForwardBase"的情况下， _LightColor0 变量可访问该pass处理的光源的颜色和强度信息
                 // saturate 函数的作用是将输入值限制在0到1之间
-                // fixed3 diffuse = _DiffuseColor.rgb * saturate(dot(worldNormal, lightDir)) * _LightColor0.rgb;  // 兰伯特模型
-                fixed3 diffuse = _DiffuseColor.rgb * (dot(worldNormal, lightDir)*0.5 + 0.5) * _LightColor0.rgb;  // 半兰伯特模型，将结果从[-1，1] 映射到[0,1]范围内
-                fixed4 col1 = fixed4(diffuse + ambient, 1.0);
+                fixed3 diffuse = _DiffuseColor.rgb * saturate(dot(worldNormal, lightDir)) * _LightColor0.rgb;
+
+                // 在世界坐标系中计算反射方向
+                fixed3 reflectDir = normalize(reflect(-lightDir, worldNormal));
+                // 在世界坐标中计算视角方向
+                fixed3 viewDir = normalize(_WorldSpaceCameraPos - i.worldPos);
+                // 计算镜面反射强度
+                fixed3 specular = _SpecularColor.rgb * _LightColor0.rgb * pow(saturate(dot(reflectDir, viewDir)), _Gloss);
+
+                fixed4 col1 = fixed4(diffuse + ambient + specular, 1.0);
                 return col1;
             }
             ENDCG
